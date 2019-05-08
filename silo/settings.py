@@ -74,17 +74,28 @@ WSGI_APPLICATION = 'silo.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'db-data',
-        'PORT': '5432',
-        'USER': 'postgres',
-        'HOST': 'localhost',
-        'PASSWORD': 'password'
+if os.getenv('ENVIRONMENT') == 'PIPELINE':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'project_ci_test',
+            'PORT': '5432',
+            'USER': 'postgres',
+            'HOST': 'postgres',
+            'PASSWORD': ''
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'db-data',
+            'PORT': '5432',
+            'USER': 'postgres',
+            'HOST': 'localhost',
+            'PASSWORD': 'password'
+        }
+    }
 
 
 # Password validation
