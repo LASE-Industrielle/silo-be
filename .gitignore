@@ -441,3 +441,6 @@ Temporary Items
 # End of https://www.gitignore.io/api/macos,django,python
 
 .idea
+
+#Postgresql database
+db-data/
