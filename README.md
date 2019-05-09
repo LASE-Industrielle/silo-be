@@ -12,3 +12,11 @@
 - `python3 manage.py createsuperuser --email admin@admin.com --username admin`
 - `python3 manage.py loaddata initial_data.json`
 - `python3 manage.py loaddata runserver`
+
+
+### Generating tokens for already created users
+- `python3 manage.py drf_create_token <username>`
+
+
+### Regenerating tokens
+- `python3 manage.py drf_create_token -r <username>`
