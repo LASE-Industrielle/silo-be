@@ -20,3 +20,7 @@
 
 ### Regenerating tokens
 - `python3 manage.py drf_create_token -r <username>`
+
+
+### Error: That port is already in use.
+- `sudo lsof -t -i tcp:8000 | xargs kill -9`

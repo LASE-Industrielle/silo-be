@@ -5,23 +5,17 @@ from api import models
 
 class SiloSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = (
-            'title',
-        )
         model = models.Silo
+        fields = '__all__'
 
 
 class SensorSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = (
-            'title',
-        )
         model = models.Sensor
+        fields = '__all__'
 
 
 class MeasurementSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = (
-            'title',
-        )
         model = models.Measurement
+        fields = '__all__'
