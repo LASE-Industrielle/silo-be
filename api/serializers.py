@@ -11,12 +11,12 @@ class SiloSerializer(serializers.ModelSerializer):
         model = models.Silo
 
 
-class LaserSerializer(serializers.ModelSerializer):
+class SensorSerializer(serializers.ModelSerializer):
     class Meta:
         fields = (
             'title',
         )
-        model = models.Laser
+        model = models.Sensor
 
 
 class MeasurementSerializer(serializers.ModelSerializer):

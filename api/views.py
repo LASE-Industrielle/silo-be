@@ -9,9 +9,9 @@ class SiloViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.SiloSerializer
 
 
-class LaserViewSet(viewsets.ModelViewSet):
-    queryset = models.Laser.objects.all()
-    serializer_class = serializers.LaserSerializer
+class SensorViewSet(viewsets.ModelViewSet):
+    queryset = models.Sensor.objects.all()
+    serializer_class = serializers.SensorSerializer
 
 
 class MeasurementViewSet(viewsets.ModelViewSet):

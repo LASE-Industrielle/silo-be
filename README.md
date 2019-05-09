@@ -11,7 +11,7 @@
 - `python3 manage.py migrate`
 - `python3 manage.py createsuperuser --email admin@admin.com --username admin`
 - `python3 manage.py loaddata initial_data.json`
-- `python3 manage.py loaddata runserver`
+- `python3 manage.py runserver`
 
 
 ### Generating tokens for already created users

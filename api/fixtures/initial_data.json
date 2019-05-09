@@ -1,16 +1,80 @@
 [
   {
+    "model": "api.Sensor",
+    "pk": 1,
+    "fields": {
+      "serial_number": "silo#1"
+    }
+  },
+  {
+    "model": "api.Sensor",
+    "pk": 2,
+    "fields": {
+      "serial_number": "silo#2"
+    }
+  },
+  {
     "model": "api.Silo",
     "pk": 1,
     "fields": {
-      "title": "Silo #1"
+      "height": 60,
+      "width": 10,
+      "capacity": 4500,
+      "percentage": 25,
+      "location": "address 1",
+      "sensor": 1
     }
   },
   {
     "model": "api.Silo",
     "pk": 2,
     "fields": {
-      "title": "Silo #2"
+      "height": 50,
+      "width": 15,
+      "capacity": 3000,
+      "percentage": 55,
+      "location": "address 2",
+      "sensor": 2
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 1,
+    "fields": {
+      "value": 30,
+      "read": "2019-03-16T17:41:28+00:00",
+      "saved": "2019-03-16T17:42:28+00:00",
+      "sensor": 1
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 2,
+    "fields": {
+      "value": 25,
+      "read": "2019-03-17T17:41:28+00:00",
+      "saved": "2019-03-17T17:41:30+00:00",
+      "sensor": 1
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 3,
+    "fields": {
+      "value": 20,
+      "read": "2019-03-20T17:41:28+00:00",
+      "saved": "2019-03-20T17:41:38+00:00",
+      "sensor": 1
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 4,
+    "fields": {
+      "value": 150,
+      "read": "2019-03-16T17:41:28+00:00",
+      "saved": "2019-03-16T17:41:55+00:00",
+      "sensor": 2
     }
   }
 ]

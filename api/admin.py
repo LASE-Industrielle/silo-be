@@ -1,8 +1,8 @@
 from django.contrib import admin
 
 # Register your models here.
-from api.models import Silo, Laser, Measurement
+from api.models import Silo, Sensor, Measurement
 
 admin.site.register(Silo)
-admin.site.register(Laser)
+admin.site.register(Sensor)
 admin.site.register(Measurement)

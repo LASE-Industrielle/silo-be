@@ -19,11 +19,11 @@ from django.urls import path, include
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 
-from api.views import SiloViewSet, LaserViewSet, MeasurementViewSet
+from api.views import SiloViewSet, SensorViewSet, MeasurementViewSet
 
 router = routers.DefaultRouter()
 router.register(r'silo', SiloViewSet)
-router.register(r'laser', LaserViewSet)
+router.register(r'sensor', SensorViewSet)
 router.register(r'measurement', MeasurementViewSet)
 
 urlpatterns = [

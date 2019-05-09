@@ -5,16 +5,25 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
 
+class Sensor(models.Model):
+    serial_number = models.CharField(max_length=200, default='')
+    type = models.CharField(max_length=200, default='LASER')
+
+
 class Silo(models.Model):
-    title = models.CharField(max_length=200)
-
-
-class Laser(models.Model):
-    title = models.CharField(max_length=200)
+    height = models.FloatField(default=0)
+    width = models.FloatField(default=0)
+    capacity = models.FloatField(default=0)
+    percentage = models.FloatField(default=0)
+    location = models.CharField(max_length=400, null=True, blank=True)
+    sensor = models.ForeignKey(Sensor, null=True, on_delete=models.CASCADE)
 
 
 class Measurement(models.Model):
-    title = models.CharField(max_length=200)
+    value = models.FloatField(default=0)
+    read = models.DateTimeField(null=True)
+    saved = models.DateTimeField(auto_now_add=True, null=True)
+    sensor = models.ForeignKey(Silo, on_delete=models.PROTECT, blank=True, null=True)
 
 
 # Automatically creates and saves the token for every newly registered user
