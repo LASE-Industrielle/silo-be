@@ -1,0 +1,16 @@
+[
+  {
+    "model": "api.Silo",
+    "pk": 1,
+    "fields": {
+      "title": "Silo #1"
+    }
+  },
+  {
+    "model": "api.Silo",
+    "pk": 2,
+    "fields": {
+      "title": "Silo #2"
+    }
+  }
+]
