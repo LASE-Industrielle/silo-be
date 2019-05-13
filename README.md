@@ -6,8 +6,11 @@
 - To run docker-compose file and postgresql database execute this command: `docker-compose up`
 - To stop running docker container image execute: `docker-compose down`
 
-
-### Starting an app in development mode
+### Starting an app for the first time
+- Start docker
+- `mkdir db-data`
+- `docker-compose up`
+- create `db-data` database in pgAdmin
 - `python3 manage.py migrate`
 - `python3 manage.py createsuperuser --email admin@admin.com --username admin`
 - `python3 manage.py loaddata initial_data.json`
