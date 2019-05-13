@@ -1,16 +1,27 @@
 # silo-be
 
-### Posgtresql dockerised useful commands
-- Install pgAdmin as a client for accessing db, and create database server inside it, and database with the same name as in docker-compose.yaml file (db-data)
-- If you already have installed postgresql on local machine please execute this command: `brew services stop postgresql`
-- To run docker-compose file and postgresql database execute this command: `docker-compose up`
-- To stop running docker container image execute: `docker-compose down`
+### Dockerized Postgresql DB (server and client), up and running
+
+- Make sure docker deamon is running
+- `docker-compose up -d` (d is for detached) should be enough to have postgresql set up. 
+- there are two containers, one for postgres DB, and another for pgAdmin.
+- If you already have installed postgresql on local machine please
+ execute this command: `brew services stop postgresql` 
+- execute `mkdir db-data` (in project root directory) to create directory that will be 
+used as volume for the DB
+- open local pgAdmin (http://localhost:5050), default credentials 
+are `pgadmin4@pgadmin.org` and `admin` (see `docker-compose.yml`)
+- create DB server, credentials are also in `docker-compose.yml`
+    - Note: Instead of `localhost`, provide `postgres` as host name 
+    (that's the bridged network connection name between two containers)
+- create `db-data` database in pgAdmin
+- To stop running docker container images execute: `docker-compose down`
+ 
 
 ### Starting an app for the first time
-- Start docker
-- `mkdir db-data`
-- `docker-compose up`
-- create `db-data` database in pgAdmin
+
+- Start docker containers with docker-compose (see above)
+
 - `python3 manage.py migrate`
 - `python3 manage.py createsuperuser --email admin@admin.com --username admin`
 - `python3 manage.py loaddata initial_data.json`
