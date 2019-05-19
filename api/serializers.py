@@ -3,11 +3,6 @@ from rest_framework import serializers
 from api import models
 
 
-class SiloSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Silo
-        fields = '__all__'
-
 
 class SensorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,4 +13,11 @@ class SensorSerializer(serializers.ModelSerializer):
 class MeasurementSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Measurement
+        fields = '__all__'
+
+
+class SiloSerializer(serializers.ModelSerializer):
+    sensor = SensorSerializer()
+    class Meta:
+        model = models.Silo
         fields = '__all__'
