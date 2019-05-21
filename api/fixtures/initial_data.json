@@ -3,25 +3,26 @@
     "model": "api.Sensor",
     "pk": 1,
     "fields": {
-      "serial_number": "silo#1"
+      "serial_number": "sensor#111"
     }
   },
   {
     "model": "api.Sensor",
     "pk": 2,
     "fields": {
-      "serial_number": "silo#2"
+      "serial_number": "sensor#222"
     }
   },
   {
     "model": "api.Silo",
     "pk": 1,
     "fields": {
+      "name": "Solingen",
       "height": 60,
       "width": 10,
       "capacity": 4500,
       "percentage": 25,
-      "location": "address 1",
+      "location": "Walter-Horn-Weg 1, Solingen",
       "sensor": 1
     }
   },
@@ -29,11 +30,12 @@
     "model": "api.Silo",
     "pk": 2,
     "fields": {
+      "name": "Berlin",
       "height": 50,
       "width": 15,
       "capacity": 3000,
       "percentage": 55,
-      "location": "address 2",
+      "location": "Gabriel-Max-Straße 4, 10245 Berlin, Germany",
       "sensor": 2
     }
   },
@@ -41,7 +43,7 @@
     "model": "api.Measurement",
     "pk": 1,
     "fields": {
-      "value": 30,
+      "value": 72,
       "read": "2019-03-16T17:41:28+00:00",
       "saved": "2019-03-16T17:42:28+00:00",
       "sensor": 1
@@ -51,7 +53,7 @@
     "model": "api.Measurement",
     "pk": 2,
     "fields": {
-      "value": 25,
+      "value": 66,
       "read": "2019-03-17T17:41:28+00:00",
       "saved": "2019-03-17T17:41:30+00:00",
       "sensor": 1
@@ -61,19 +63,134 @@
     "model": "api.Measurement",
     "pk": 3,
     "fields": {
-      "value": 20,
+      "value": 58,
       "read": "2019-03-20T17:41:28+00:00",
       "saved": "2019-03-20T17:41:38+00:00",
       "sensor": 1
     }
   },
+    {
+    "model": "api.Measurement",
+    "pk": 5,
+    "fields": {
+      "value": 41,
+      "read": "2019-03-21T17:41:28+00:00",
+      "saved": "2019-03-21T17:42:28+00:00",
+      "sensor": 1
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 6,
+    "fields": {
+      "value": 37,
+      "read": "2019-03-22T17:41:28+00:00",
+      "saved": "2019-03-22T17:41:30+00:00",
+      "sensor": 1
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 7,
+    "fields": {
+      "value": 24,
+      "read": "2019-03-23T17:41:28+00:00",
+      "saved": "2019-03-23T17:41:38+00:00",
+      "sensor": 1
+    }
+  },
+
+  {
+    "model": "api.Measurement",
+    "pk": 8,
+    "fields": {
+      "value": 20,
+      "read": "2019-03-23T18:41:28+00:00",
+      "saved": "2019-03-23T18:41:38+00:00",
+      "sensor": 1
+    }
+  },
+
+
   {
     "model": "api.Measurement",
     "pk": 4,
     "fields": {
-      "value": 150,
+      "value": 85,
+      "read": "2019-03-16T10:41:28+00:00",
+      "saved": "2019-03-16T10:41:55+00:00",
+      "sensor": 2
+    }
+  },
+
+    {
+    "model": "api.Measurement",
+    "pk": 9,
+    "fields": {
+      "value": 81,
       "read": "2019-03-16T17:41:28+00:00",
-      "saved": "2019-03-16T17:41:55+00:00",
+      "saved": "2019-03-16T17:42:28+00:00",
+      "sensor": 2
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 10,
+    "fields": {
+      "value": 77,
+      "read": "2019-03-17T17:41:28+00:00",
+      "saved": "2019-03-17T17:41:30+00:00",
+      "sensor": 2
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 11,
+    "fields": {
+      "value": 63,
+      "read": "2019-03-20T17:41:28+00:00",
+      "saved": "2019-03-20T17:41:38+00:00",
+      "sensor": 2
+    }
+  },
+    {
+    "model": "api.Measurement",
+    "pk": 12,
+    "fields": {
+      "value": 57,
+      "read": "2019-03-21T17:41:28+00:00",
+      "saved": "2019-03-21T17:42:28+00:00",
+      "sensor": 2
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 13,
+    "fields": {
+      "value": 51,
+      "read": "2019-03-22T17:41:28+00:00",
+      "saved": "2019-03-22T17:41:30+00:00",
+      "sensor": 2
+    }
+  },
+  {
+    "model": "api.Measurement",
+    "pk": 14,
+    "fields": {
+      "value": 40,
+      "read": "2019-03-23T17:41:28+00:00",
+      "saved": "2019-03-23T17:41:38+00:00",
+      "sensor": 2
+    }
+  },
+
+  {
+    "model": "api.Measurement",
+    "pk": 15,
+    "fields": {
+      "value": 34,
+      "read": "2019-03-23T18:41:28+00:00",
+      "saved": "2019-03-23T18:41:38+00:00",
       "sensor": 2
     }
   }

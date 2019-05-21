@@ -9,8 +9,12 @@ class Sensor(models.Model):
     serial_number = models.CharField(max_length=200, default='')
     type = models.CharField(max_length=200, default='LASER')
 
+    def __str__(self):
+        return self.type + " (" +  self.serial_number + ")"
+
 
 class Silo(models.Model):
+    name = models.CharField(max_length=200, default="")
     height = models.FloatField(default=0)
     width = models.FloatField(default=0)
     capacity = models.FloatField(default=0)
@@ -18,12 +22,18 @@ class Silo(models.Model):
     location = models.CharField(max_length=400, null=True, blank=True)
     sensor = models.ForeignKey(Sensor, null=True, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.name
+
 
 class Measurement(models.Model):
     value = models.FloatField(default=0)
     read = models.DateTimeField(null=True)
     saved = models.DateTimeField(auto_now_add=True, null=True)
     sensor = models.ForeignKey(Silo, on_delete=models.PROTECT, blank=True, null=True)
+
+    def __str__(self):
+        return str(self.value) + " - " + str(self.saved)
 
 
 # Automatically creates and saves the token for every newly registered user
