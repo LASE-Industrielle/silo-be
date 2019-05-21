@@ -1,7 +1,11 @@
-from django.db import models
+import datetime
+
 from django.conf import settings
+from django.db import models
+from django.db.models import Avg
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 from rest_framework.authtoken.models import Token
 
 
@@ -10,7 +14,7 @@ class Sensor(models.Model):
     type = models.CharField(max_length=200, default='LASER')
 
     def __str__(self):
-        return self.type + " (" +  self.serial_number + ")"
+        return self.type + " (" + self.serial_number + ")"
 
 
 class Silo(models.Model):
@@ -25,12 +29,27 @@ class Silo(models.Model):
     def __str__(self):
         return self.name
 
+    def last_update(self):
+        return "never"
+
+    def last_days_in_average(self):
+        until_date = datetime.date.today() - timezone.timedelta(days=3)
+
+        measures = Measurement.objects.filter(sensor=self.sensor).values('saved') \
+            .annotate(value=Avg('value')).order_by('-saved')[:3]
+
+        averages = {}
+        for measure in measures:
+            averages[measure['saved'].strftime('%Y-%m-%d')] = measure['value']
+
+        return averages
+
 
 class Measurement(models.Model):
     value = models.FloatField(default=0)
     read = models.DateTimeField(null=True)
     saved = models.DateTimeField(auto_now_add=True, null=True)
-    sensor = models.ForeignKey(Silo, on_delete=models.PROTECT, blank=True, null=True)
+    sensor = models.ForeignKey(Sensor, on_delete=models.PROTECT, blank=True, null=True)
 
     def __str__(self):
         return str(self.value) + " - " + str(self.saved)
