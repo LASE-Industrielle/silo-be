@@ -20,7 +20,6 @@ class Silo(models.Model):
     height = models.FloatField(default=0)
     width = models.FloatField(default=0)
     capacity = models.FloatField(default=0)
-    percentage = models.FloatField(default=0)
     location = models.CharField(max_length=400, null=True, blank=True)
     sensor = models.ForeignKey(Sensor, null=True, on_delete=models.CASCADE)
 
@@ -48,7 +47,6 @@ class Silo(models.Model):
 
         return result
 
-
     def last_days_in_average(self):
         measures = Measurement.objects.filter(sensor=self.sensor).values('saved') \
                        .annotate(value=Avg('value')).order_by('-saved')[:3]
@@ -58,6 +56,12 @@ class Silo(models.Model):
             averages[measure['saved'].strftime('%Y-%m-%d')] = measure['value']
 
         return averages
+
+    def percentage(self):
+        last_measure = Measurement.objects.filter(sensor=self.sensor).order_by('-saved').first()
+        if last_measure is None:
+            return "N/A"
+        return last_measure.value
 
 
 class Measurement(models.Model):

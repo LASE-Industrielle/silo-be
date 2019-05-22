@@ -19,6 +19,7 @@ class SiloSerializer(serializers.ModelSerializer):
     sensor = SensorSerializer()
     last_days_in_average = serializers.SerializerMethodField()
     last_update = serializers.SerializerMethodField()
+    percentage = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Silo
@@ -29,3 +30,6 @@ class SiloSerializer(serializers.ModelSerializer):
 
     def get_last_update(self, obj):
         return obj.last_update()
+
+    def get_percentage(self, obj):
+        return obj.percentage()
