@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
-import pytz
 from unittest import mock
 
+import pytz
 from django.test import TestCase
 
 from api.models import Silo, Sensor, Measurement
@@ -40,4 +40,5 @@ class SiloTest(TestCase):
         self.assertEquals(result['2019-05-20'], 1)  # one measure for this day
         self.assertEquals(result['2019-05-19'], 3)  # two measures, average is 3
         self.assertEquals(result['2019-05-18'], 5)  # one measure for this day
-        self.assertEquals(result.pop('2019-05-17', 'no value found'), 'no value found')  # no measure should be for this date
+        self.assertEquals(result.pop('2019-05-17', 'no value found'),
+                          'no value found')  # no measure should be for this date

@@ -1,11 +1,9 @@
-import datetime
-
 from django.conf import settings
+from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.db import models
 from django.db.models import Avg
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import timezone
 from rest_framework.authtoken.models import Token
 
 
@@ -30,13 +28,30 @@ class Silo(models.Model):
         return self.name
 
     def last_update(self):
-        return "never"
+        last_measure = Measurement.objects.filter(sensor=self.sensor).order_by('-saved').first()
+        if last_measure is None:
+            return "no measures"
+        result = naturaltime(last_measure.saved)
+
+        result = result.replace("minutes", "m")
+        result = result.replace("minute", "m")
+        result = result.replace("hours", "h")
+        result = result.replace("hour", "h")
+        result = result.replace("days", "d")
+        result = result.replace("day", "d")
+        result = result.replace("weeks", "w")
+        result = result.replace("week", "w")
+        result = result.replace("months", "mo")
+        result = result.replace("month", "mo")
+        result = result.replace("years", "y")
+        result = result.replace("year", "y")
+
+        return result
+
 
     def last_days_in_average(self):
-        until_date = datetime.date.today() - timezone.timedelta(days=3)
-
         measures = Measurement.objects.filter(sensor=self.sensor).values('saved') \
-            .annotate(value=Avg('value')).order_by('-saved')[:3]
+                       .annotate(value=Avg('value')).order_by('-saved')[:3]
 
         averages = {}
         for measure in measures:

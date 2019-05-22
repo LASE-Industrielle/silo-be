@@ -18,6 +18,7 @@ class MeasurementSerializer(serializers.ModelSerializer):
 class SiloSerializer(serializers.ModelSerializer):
     sensor = SensorSerializer()
     last_days_in_average = serializers.SerializerMethodField()
+    last_update = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Silo
@@ -25,3 +26,6 @@ class SiloSerializer(serializers.ModelSerializer):
 
     def get_last_days_in_average(self, obj):
         return obj.last_days_in_average()
+
+    def get_last_update(self, obj):
+        return obj.last_update()
