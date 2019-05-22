@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.db import models
 from django.db.models import Avg
+from django.db.models.functions import TruncDay
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
@@ -47,13 +48,22 @@ class Silo(models.Model):
 
         return result
 
+    # measures = Measurement.objects.filter(sensor=self.sensor).annotate(month=TruncDay('saved')).values(
+    #     'month').annotate(c=Avg('value')).values('month', 'c').order_by('-month')[:3]
+    #
+    # averages = {}
+    # for measure in measures:
+    #     averages[measure['month'].strftime('%Y-%m-%d')] = measure['c']
+    #
+    # return averages
+
     def last_days_in_average(self):
-        measures = Measurement.objects.filter(sensor=self.sensor).values('saved') \
-                       .annotate(value=Avg('value')).order_by('-saved')[:3]
+        measures = Measurement.objects.filter(sensor=self.sensor).annotate(day=TruncDay('saved')).values(
+            'day').annotate(avg=Avg('value')).values('day', 'avg').order_by('-day')[:3]
 
         averages = {}
         for measure in measures:
-            averages[measure['saved'].strftime('%Y-%m-%d')] = measure['value']
+            averages[measure['day'].strftime('%Y-%m-%d')] = measure['avg']
 
         return averages
 
