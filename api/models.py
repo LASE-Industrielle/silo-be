@@ -76,6 +76,16 @@ class Measurement(models.Model):
         return str(self.value) + " - " + str(self.saved)
 
 
+class Notification(models.Model):
+    title = models.CharField(max_length=100, default="")
+    body = models.CharField(max_length=200, default="")
+    timestamp = models.DateTimeField(auto_now_add=True, null=True)
+
+    def __str__(self):
+        return f"Title: {self.title} | Body: {self.body} | Timestamp: {self.timestamp}"
+
+
+
 # Automatically creates and saves the token for every newly registered user
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):

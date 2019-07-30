@@ -33,3 +33,9 @@ class SiloSerializer(serializers.ModelSerializer):
 
     def get_percentage(self, obj):
         return obj.percentage()
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Notification
+        fields = '__all__'
