@@ -20,7 +20,8 @@ from fcm_django.api.rest_framework import FCMDeviceAuthorizedViewSet
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 
-from api.views import SiloViewSet, SensorViewSet, MeasurementViewSet, all_measures_for_sensor, NotificationViewSet
+from api.views import SiloViewSet, SensorViewSet, MeasurementViewSet, all_measures_for_sensor, NotificationViewSet, \
+    export_measures_for_sensor
 
 router = routers.DefaultRouter()
 router.register(r'silo', SiloViewSet)
@@ -31,6 +32,7 @@ router.register(r'devices', FCMDeviceAuthorizedViewSet)
 
 urlpatterns = [
     path('measurement/all/<int:sensor_id>', all_measures_for_sensor),
+    path('measurement/export/<int:sensor_id>', export_measures_for_sensor),
     path('admin/', admin.site.urls),
     url(r'^', include(router.urls)),
     url(r'^auth/', obtain_auth_token),

@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.db import models
-from django.db.models import Avg, Min, Max
+from django.db.models import Max
 from django.db.models.functions import TruncDay
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -83,7 +83,6 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Title: {self.title} | Body: {self.body} | Timestamp: {self.timestamp}"
-
 
 
 # Automatically creates and saves the token for every newly registered user

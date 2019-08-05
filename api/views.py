@@ -1,7 +1,8 @@
 # Create your views here.
-from datetime import datetime
+import csv
+import datetime
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from fcm_django.fcm import fcm_send_topic_message
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -76,3 +77,19 @@ def all_measures_for_sensor(request, sensor_id):
             result[measure_date] = measures_per_day
 
     return JsonResponse(result)
+
+
+def export_measures_for_sensor(request, sensor_id):
+    measures = Measurement.objects.filter(sensor=sensor_id).all()
+    time_format_filename = "%Y-%m-%d-%H-%M-%S"
+    time_format_in_csv = "%Y-%m-%d %H:%M:%S"
+    exported_at = datetime.datetime.now().strftime(time_format_filename)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="measurements_{exported_at}.csv"'
+    writer = csv.writer(response)
+
+    for measure in measures:
+        writer.writerow([measure.saved.strftime(time_format_in_csv), measure.value])
+
+    return response
