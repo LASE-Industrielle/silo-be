@@ -6,7 +6,7 @@ from django.test import TestCase
 from freezegun import freeze_time
 
 from api.models import Silo, Sensor, Measurement
-from api.views import _measures_by_hour, _measures_by_day, _measures_by_week, _measures_by_month
+from api.views import MeasurementViewSet
 
 
 class SiloTest(TestCase):
@@ -61,6 +61,7 @@ class SiloTest(TestCase):
 
     @freeze_time("2019-03-23 18:45")
     def test_measures_by_hour(self):
+        view = MeasurementViewSet()
         sensor_id = 1
         sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
         values = {
@@ -81,7 +82,8 @@ class SiloTest(TestCase):
 
         self.create_test_measurements(sensor, values)
 
-        response = _measures_by_hour(sensor_id)
+        response = view._measures_by_hour(sensor_id)
+
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -90,6 +92,7 @@ class SiloTest(TestCase):
 
     @freeze_time("2019-03-23 18:45")
     def test_measures_by_day(self):
+        view = MeasurementViewSet()
         sensor_id = 1
         sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
 
@@ -107,7 +110,7 @@ class SiloTest(TestCase):
 
         self.create_test_measurements(sensor, values)
 
-        response = _measures_by_day(sensor_id)
+        response = view._measures_by_day(sensor_id)
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -116,6 +119,7 @@ class SiloTest(TestCase):
 
     @freeze_time("2019-03-23 18:45")
     def test_measures_by_week(self):
+        view = MeasurementViewSet()
         sensor_id = 1
         sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
 
@@ -144,7 +148,7 @@ class SiloTest(TestCase):
 
         self.create_test_measurements(sensor, values)
 
-        response = _measures_by_week(sensor_id)
+        response = view._measures_by_week(sensor_id)
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -153,6 +157,7 @@ class SiloTest(TestCase):
 
     @freeze_time("2019-03-23 18:45")
     def test_measures_by_month(self):
+        view = MeasurementViewSet()
         sensor_id = 1
         sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
 
@@ -181,7 +186,7 @@ class SiloTest(TestCase):
 
         self.create_test_measurements(sensor, values)
 
-        response = _measures_by_month(sensor_id)
+        response = view._measures_by_month(sensor_id)
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
