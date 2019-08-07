@@ -15,13 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from fcm_django.api.rest_framework import FCMDeviceAuthorizedViewSet
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 
 from api.views import SiloViewSet, SensorViewSet, MeasurementViewSet, all_measures_for_sensor, NotificationViewSet, \
-    export_measures_for_sensor
+    export_measures_for_sensor, measures_for_graph
 
 router = routers.DefaultRouter()
 router.register(r'silo', SiloViewSet)
@@ -32,6 +32,7 @@ router.register(r'devices', FCMDeviceAuthorizedViewSet)
 
 urlpatterns = [
     path('measurement/all/<int:sensor_id>', all_measures_for_sensor),
+    path('measurement/graph/<int:sensor_id>/<str:timespan_type>/', measures_for_graph),
     path('measurement/export/<int:sensor_id>', export_measures_for_sensor),
     path('admin/', admin.site.urls),
     url(r'^', include(router.urls)),

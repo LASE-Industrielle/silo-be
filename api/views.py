@@ -2,7 +2,10 @@
 import csv
 import datetime
 
+from django.db.models import Max
+from django.db.models.functions import Trunc
 from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
 from fcm_django.fcm import fcm_send_topic_message
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -75,6 +78,91 @@ def all_measures_for_sensor(request, sensor_id):
 
             measures_per_day = {m.saved.strftime('%H:%M'): m.value for m in measures_per_day_objects}
             result[measure_date] = measures_per_day
+
+    return JsonResponse(result)
+
+
+def measures_for_graph(request, sensor_id, timespan_type):
+    # Replacement for SWITCH, dictionary with lambdas that will be executed only when the proper call is made
+    # otherwise it will return empty json
+    return {
+        'day': lambda s_id: _measures_by_day(s_id),
+        'hour': lambda s_id: _measures_by_hour(s_id),
+        'week': lambda s_id: _measures_by_week(s_id),
+        'month': lambda s_id: _measures_by_month(s_id)
+    }.get(timespan_type, lambda s_id: JsonResponse({}))(sensor_id)
+
+
+def _measures_by_hour(sensor_id):
+    # get maximum dates grouped by expected time format (in this case hours and minutes)
+    base_query = _get_base_query(sensor_id, timezone.timedelta(hours=1))
+    measure_dates = base_query.annotate(
+        saved_minute=Trunc('saved', 'minute', tzinfo=timezone.utc)).values('saved_minute').annotate(
+        max_date=Max('saved')).order_by('saved_minute')
+
+    max_value_dates = [m['max_date'] for m in measure_dates]
+    measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
+
+    result = {}
+
+    for m in measures:
+        result[m.saved.strftime("%H:%M")] = m.value
+
+    return JsonResponse(result)
+
+
+def _get_base_query(sensor_id, timedelta):
+    now = timezone.now()
+    filter_from = now - timedelta
+    return Measurement.objects.filter(sensor_id=sensor_id, saved__gte=filter_from, saved__lte=now)
+
+
+def _measures_by_day(sensor_id):
+    base_query = _get_base_query(sensor_id, datetime.timedelta(days=1))
+    measure_dates = base_query.order_by("saved").annotate(
+        saved_hour=Trunc('saved', 'hour', tzinfo=timezone.utc)).values('saved_hour').annotate(
+        max_date=Max('saved')).order_by('saved_hour')
+
+    max_value_dates = [m['max_date'] for m in measure_dates]
+    measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
+
+    result = {}
+
+    for m in measures:
+        result[m.saved.strftime("%H:00")] = m.value
+
+    return JsonResponse(result)
+
+
+def _measures_by_week(sensor_id):
+    base_query = _get_base_query(sensor_id, datetime.timedelta(weeks=1))
+    measure_dates = base_query.order_by("saved").annotate(
+        saved_day=Trunc('saved', 'day', tzinfo=timezone.utc)).values('saved_day').annotate(
+        max_date=Max('saved')).order_by('saved_day')
+
+    max_value_dates = [m['max_date'] for m in measure_dates]
+    measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
+
+    result = {}
+
+    for m in measures:
+        result[m.saved.strftime("%d.%m")] = m.value
+
+    return JsonResponse(result)
+
+
+def _measures_by_month(sensor_id):
+    base_query = _get_base_query(sensor_id, datetime.timedelta(days=30))
+    measure_dates = base_query.order_by("saved").annotate(saved_day=Trunc('saved', 'day', tzinfo=timezone.utc)).values(
+        'saved_day').annotate(max_date=Max('saved')).order_by('saved_day')
+
+    max_value_dates = [m['max_date'] for m in measure_dates]
+    measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
+
+    result = {}
+
+    for m in measures:
+        result[m.saved.strftime("%d.%m")] = m.value
 
     return JsonResponse(result)
 
