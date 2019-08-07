@@ -95,75 +95,47 @@ def measures_for_graph(request, sensor_id, timespan_type):
 
 def _measures_by_hour(sensor_id):
     # get maximum dates grouped by expected time format (in this case hours and minutes)
-    base_query = _get_base_query(sensor_id, timezone.timedelta(hours=1))
-    measure_dates = base_query.annotate(
-        saved_minute=Trunc('saved', 'minute', tzinfo=timezone.utc)).values('saved_minute').annotate(
-        max_date=Max('saved')).order_by('saved_minute')
-
-    max_value_dates = [m['max_date'] for m in measure_dates]
-    measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
-
-    result = {}
-
-    for m in measures:
-        result[m.saved.strftime("%H:%M")] = m.value
-
-    return JsonResponse(result)
-
-
-def _get_base_query(sensor_id, timedelta):
-    now = timezone.now()
-    filter_from = now - timedelta
-    return Measurement.objects.filter(sensor_id=sensor_id, saved__gte=filter_from, saved__lte=now)
+    delta = timezone.timedelta(hours=1)
+    truncated_timestamp = Trunc('saved', 'minute', tzinfo=timezone.utc)
+    key_format = "%H:%M"
+    return _get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp)
 
 
 def _measures_by_day(sensor_id):
-    base_query = _get_base_query(sensor_id, datetime.timedelta(days=1))
-    measure_dates = base_query.order_by("saved").annotate(
-        saved_hour=Trunc('saved', 'hour', tzinfo=timezone.utc)).values('saved_hour').annotate(
-        max_date=Max('saved')).order_by('saved_hour')
+    delta = timezone.timedelta(days=1)
+    truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.utc)
+    key_format = "%H:00"
 
-    max_value_dates = [m['max_date'] for m in measure_dates]
-    measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
-
-    result = {}
-
-    for m in measures:
-        result[m.saved.strftime("%H:00")] = m.value
-
-    return JsonResponse(result)
+    return _get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp)
 
 
 def _measures_by_week(sensor_id):
-    base_query = _get_base_query(sensor_id, datetime.timedelta(weeks=1))
-    measure_dates = base_query.order_by("saved").annotate(
-        saved_day=Trunc('saved', 'day', tzinfo=timezone.utc)).values('saved_day').annotate(
-        max_date=Max('saved')).order_by('saved_day')
+    delta = timezone.timedelta(weeks=1)
+    key_format = "%d.%m"
+    truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
 
-    max_value_dates = [m['max_date'] for m in measure_dates]
-    measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
-
-    result = {}
-
-    for m in measures:
-        result[m.saved.strftime("%d.%m")] = m.value
-
-    return JsonResponse(result)
+    return _get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp)
 
 
 def _measures_by_month(sensor_id):
-    base_query = _get_base_query(sensor_id, datetime.timedelta(days=30))
-    measure_dates = base_query.order_by("saved").annotate(saved_day=Trunc('saved', 'day', tzinfo=timezone.utc)).values(
-        'saved_day').annotate(max_date=Max('saved')).order_by('saved_day')
+    delta = timezone.timedelta(days=30)
+    key_format = "%d.%m"
+    truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
 
+    return _get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp)
+
+
+def _get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp):
+    now = timezone.now()
+    filter_from = now - delta
+    base_query = Measurement.objects.filter(sensor_id=sensor_id, saved__gte=filter_from, saved__lte=now)
+    measure_dates = base_query.annotate(saved_trunc=truncated_timestamp).values('saved_trunc').annotate(
+        max_date=Max('saved'))
     max_value_dates = [m['max_date'] for m in measure_dates]
     measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
-
     result = {}
-
     for m in measures:
-        result[m.saved.strftime("%d.%m")] = m.value
-
+        result[m.saved.strftime(key_format)] = m.value
     return JsonResponse(result)
 
 
