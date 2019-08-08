@@ -172,104 +172,64 @@ class SiloTest(TestCase):
              "06.03": 52.0, "05.03": 50.0}
         )
 
-    @freeze_time("2019-03-23 18:45")
     def test_measures_by_custom_dates_less_than_hour(self):
-        view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
-
-        self.create_a_lot_of_test_measures(sensor)
-
         date_from = "2019-03-13T15:30:04.111Z"
         date_to = "2019-03-13T16:00:04.111Z"
+        expected_data = {"16:43": 63.1, "16:46": 64.0}
+        self.base_test_measures_by_custom_date(date_from, date_to, expected_data)
 
-        response = view.measures_for_graph_with_time_interval(None, sensor_id, date_from, date_to)
-
-        self.assertJSONEqual(
-            str(response.content, encoding='utf8'),
-            {"16:43": 63.1, "16:46": 64.0}
-        )
-
-    @freeze_time("2019-03-23 18:45")
     def test_measures_by_custom_dates_less_than_six_hours(self):
-        view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
-
-        self.create_a_lot_of_test_measures(sensor)
-
         date_from = "2019-03-13T10:30:04.111Z"
         date_to = "2019-03-13T16:00:04.111Z"
+        expected_data = {"14:42": 63.0, "16:43": 63.1, "16:46": 64.0, }
+        self.base_test_measures_by_custom_date(date_from, date_to, expected_data)
 
-        response = view.measures_for_graph_with_time_interval(None, sensor_id, date_from, date_to)
-
-        self.assertJSONEqual(
-            str(response.content, encoding='utf8'),
-            {"14:42": 63.0, "16:43": 63.1, "16:46": 64.0, }
-        )
-
-    @freeze_time("2019-03-23 18:45")
     def test_measures_by_custom_dates_less_than_one_day(self):
-        view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
-
-        self.create_a_lot_of_test_measures(sensor)
-
         date_from = "2019-03-10T00:00:04.111Z"
         date_to = "2019-03-10T19:41:04.111Z"
+        expected_data = {"14:00": 60.0, "15:00": 61.0, "16:00": 62.0}
+        self.base_test_measures_by_custom_date(date_from, date_to, expected_data)
 
-        response = view.measures_for_graph_with_time_interval(None, sensor_id, date_from, date_to)
-
-        self.assertJSONEqual(
-            str(response.content, encoding='utf8'),
-            {"14:00": 60.0, "15:00": 61.0, "16:00": 62.0}
-        )
-
-    @freeze_time("2019-03-23 18:45")
     def test_measures_by_custom_dates_less_than_one_week(self):
-        view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
-
-        self.create_a_lot_of_test_measures(sensor)
-
         date_from = "2019-03-04T00:00:04.111Z"
         date_to = "2019-03-10T19:41:04.111Z"
+        expected_data = {"05.03. 12:00": 50.0, "06.03. 12:00": 50.0, "06.03. 13:00": 51.0, "06.03. 14:00": 52.0,
+                         "07.03. 13:00": 53.0, "07.03. 14:00": 54.0, "07.03. 15:00": 55.0, "08.03. 13:00": 56.0,
+                         "08.03. 15:00": 57.0, "09.03. 14:00": 58.0, "09.03. 15:00": 59.0, "10.03. 14:00": 60.0,
+                         "10.03. 15:00": 61.0, "10.03. 16:00": 62.0}
+        self.base_test_measures_by_custom_date(date_from, date_to, expected_data)
 
-        response = view.measures_for_graph_with_time_interval(None, sensor_id, date_from, date_to)
+    def test_measures_by_custom_dates_more_than_one_week(self):
+        date_from = "2019-03-04T00:00:04.111Z"
+        date_to = "2019-03-24T19:41:04.111Z"
+        expected_data = {"05.03": 50.0, "06.03": 52.0, "07.03": 55.0, "08.03": 57.0, "09.03": 59.0, "10.03": 62.0,
+                         "13.03": 64.0, "15.03": 66.0, "23.03": 68.0}
+        self.base_test_measures_by_custom_date(date_from, date_to, expected_data)
 
-        self.assertJSONEqual(
-            str(response.content, encoding='utf8'),
-            {"05.03. 12:00": 50.0, "06.03. 12:00": 50.0, "06.03. 13:00": 51.0, "06.03. 14:00": 52.0,
-             "07.03. 13:00": 53.0, "07.03. 14:00": 54.0, "07.03. 15:00": 55.0, "08.03. 13:00": 56.0,
-             "08.03. 15:00": 57.0, "09.03. 14:00": 58.0, "09.03. 15:00": 59.0, "10.03. 14:00": 60.0,
-             "10.03. 15:00": 61.0, "10.03. 16:00": 62.0}
-        )
+    def test_measures_by_custom_dates_date_to_is_before_date_from(self):
+        date_from = "2019-03-04T00:00:04.111Z"
+        date_to = "2018-03-24T19:41:04.111Z"
+        expected_data = {}
+        self.base_test_measures_by_custom_date(date_from, date_to, expected_data)
 
     @freeze_time("2019-03-23 18:45")
-    def test_measures_by_custom_dates_more_than_one_week(self):
+    def base_test_measures_by_custom_date(self, date_from, date_to, expected_data):
         view = MeasurementViewSet()
         sensor_id = 1
         sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
-
         self.create_a_lot_of_test_measures(sensor)
 
-        date_from = "2019-03-04T00:00:04.111Z"
-        date_to = "2019-03-24T19:41:04.111Z"
-
         response = view.measures_for_graph_with_time_interval(None, sensor_id, date_from, date_to)
-
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
-            {"05.03": 50.0, "06.03": 52.0, "07.03": 55.0, "08.03": 57.0, "09.03": 59.0, "10.03": 62.0, "13.03": 64.0,
-             "15.03": 66.0, "23.03": 68.0}
+            expected_data
         )
 
     def create_a_lot_of_test_measures(self, sensor):
         values = {
             datetime(2019, 3, 23, 14, 48, 30, tzinfo=timezone.utc): 68,
             datetime(2019, 3, 23, 11, 46, 30, tzinfo=timezone.utc): 67,
+
             datetime(2019, 3, 15, 15, 44, 31, tzinfo=timezone.utc): 66,
             datetime(2019, 3, 15, 14, 42, 31, tzinfo=timezone.utc): 65,
 
@@ -281,16 +241,21 @@ class SiloTest(TestCase):
             datetime(2019, 3, 10, 15, 46, 30, tzinfo=timezone.utc): 62,
             datetime(2019, 3, 10, 14, 44, 30, tzinfo=timezone.utc): 61,
             datetime(2019, 3, 10, 13, 41, 30, tzinfo=timezone.utc): 60,
+
             datetime(2019, 3, 9, 14, 42, 32, tzinfo=timezone.utc): 59,
             datetime(2019, 3, 9, 13, 40, 32, tzinfo=timezone.utc): 58,
+
             datetime(2019, 3, 8, 14, 47, 31, tzinfo=timezone.utc): 57,
             datetime(2019, 3, 8, 12, 45, 31, tzinfo=timezone.utc): 56,
+
             datetime(2019, 3, 7, 14, 42, 30, tzinfo=timezone.utc): 55,
             datetime(2019, 3, 7, 13, 41, 30, tzinfo=timezone.utc): 54,
             datetime(2019, 3, 7, 12, 40, 30, tzinfo=timezone.utc): 53,
+
             datetime(2019, 3, 6, 13, 39, 30, tzinfo=timezone.utc): 52,
             datetime(2019, 3, 6, 12, 39, 30, tzinfo=timezone.utc): 51,
             datetime(2019, 3, 6, 11, 39, 30, tzinfo=timezone.utc): 50,
+
             datetime(2019, 3, 5, 11, 39, 30, tzinfo=timezone.utc): 50,
 
         }

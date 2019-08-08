@@ -2,6 +2,7 @@
 import csv
 import datetime
 
+import dateutil
 from django.db.models import Max
 from django.db.models.functions import Trunc
 from django.http import JsonResponse, HttpResponse
@@ -97,11 +98,9 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False,
             url_path='graph/(?P<sensor_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
     def measures_for_graph_with_time_interval(self, request, sensor_id, date_from, date_to):
-        import dateutil.parser
         date_from = dateutil.parser.parse(date_from)
         date_to = dateutil.parser.parse(date_to)
 
-        category = ""
         if date_from > date_to:
             return JsonResponse({})
         elif date_from + timezone.timedelta(hours=6) > date_to:
@@ -152,20 +151,24 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
 
     @staticmethod
-    def _get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta=None, date_from=None,
-                                       date_to=None):
+    def _get_measures_as_json_response(key_format, sensor_id, truncated_timestamp,
+                                       delta=None, date_from=None, date_to=None):
         if delta:
             date_to = timezone.now()
             date_from = date_to - delta
+
         base_query = Measurement.objects.filter(sensor_id=sensor_id, saved__gte=date_from, saved__lte=date_to)
         measure_dates = base_query.annotate(saved_trunc=truncated_timestamp).values('saved_trunc').annotate(
             max_date=Max('saved'))
         max_value_dates = [m['max_date'] for m in measure_dates]
+
         measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
+
         result = {}
         for m in measures:
             parsed_date = localtime(m.saved).strftime(key_format)
             result[parsed_date] = m.value
+
         return JsonResponse(result)
 
     @action(methods=['get'], detail=False, url_path='export/(?P<sensor_id>[^/.]+)')
