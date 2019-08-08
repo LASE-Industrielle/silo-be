@@ -6,6 +6,7 @@ from django.db.models import Max
 from django.db.models.functions import Trunc
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
+from django.utils.timezone import localtime
 from fcm_django.fcm import fcm_send_topic_message
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -93,46 +94,78 @@ class MeasurementViewSet(viewsets.ModelViewSet):
             'month': lambda s_id: self._measures_by_month(s_id)
         }.get(timespan_type, lambda s_id: JsonResponse({}))(sensor_id)
 
+    @action(methods=['get'], detail=False,
+            url_path='graph/(?P<sensor_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
+    def measures_for_graph_with_time_interval(self, request, sensor_id, date_from, date_to):
+        import dateutil.parser
+        date_from = dateutil.parser.parse(date_from)
+        date_to = dateutil.parser.parse(date_to)
+
+        category = ""
+        if date_from > date_to:
+            return JsonResponse({})
+        elif date_from + timezone.timedelta(hours=6) > date_to:
+            truncated_timestamp = Trunc('saved', 'minute', tzinfo=timezone.utc)
+            key_format = "%H:%M"
+        elif date_from + timezone.timedelta(days=1) > date_to:
+            truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.utc)
+            key_format = "%H:00"
+        elif date_from + timezone.timedelta(days=7) > date_to:
+            truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.utc)
+            key_format = "%d.%m. %H:00"
+        elif date_from + timezone.timedelta(days=7) <= date_to:
+            key_format = "%d.%m"
+            truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
+        else:
+            # in case some cases are not covered
+            return JsonResponse({"no data": 0})
+
+        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, date_from=date_from,
+                                                   date_to=date_to)
+
     def _measures_by_hour(self, sensor_id):
         # get maximum dates grouped by expected time format (in this case hours and minutes)
         delta = timezone.timedelta(hours=1)
         truncated_timestamp = Trunc('saved', 'minute', tzinfo=timezone.utc)
         key_format = "%H:%M"
-        return self._get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp)
+        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
 
     def _measures_by_day(self, sensor_id):
         delta = timezone.timedelta(days=1)
-        truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.utc)
+        truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.get_current_timezone())
         key_format = "%H:00"
 
-        return self._get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp)
+        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
 
     def _measures_by_week(self, sensor_id):
         delta = timezone.timedelta(weeks=1)
         key_format = "%d.%m"
         truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
 
-        return self._get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp)
+        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
 
     def _measures_by_month(self, sensor_id):
         delta = timezone.timedelta(days=30)
         key_format = "%d.%m"
         truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
 
-        return self._get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp)
+        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
 
     @staticmethod
-    def _get_measures_as_json_response(delta, key_format, sensor_id, truncated_timestamp):
-        now = timezone.now()
-        filter_from = now - delta
-        base_query = Measurement.objects.filter(sensor_id=sensor_id, saved__gte=filter_from, saved__lte=now)
+    def _get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta=None, date_from=None,
+                                       date_to=None):
+        if delta:
+            date_to = timezone.now()
+            date_from = date_to - delta
+        base_query = Measurement.objects.filter(sensor_id=sensor_id, saved__gte=date_from, saved__lte=date_to)
         measure_dates = base_query.annotate(saved_trunc=truncated_timestamp).values('saved_trunc').annotate(
             max_date=Max('saved'))
         max_value_dates = [m['max_date'] for m in measure_dates]
         measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
         result = {}
         for m in measures:
-            result[m.saved.strftime(key_format)] = m.value
+            parsed_date = localtime(m.saved).strftime(key_format)
+            result[parsed_date] = m.value
         return JsonResponse(result)
 
     @action(methods=['get'], detail=False, url_path='export/(?P<sensor_id>[^/.]+)')
