@@ -43,11 +43,13 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'api',
     'fcm_django',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -158,3 +160,9 @@ SECURE_SSL_REDIRECT = True
 FCM_DJANGO_SETTINGS = {
    "FCM_SERVER_KEY": os.getenv("SILO_FCM_SERVER_KEY")
 }
+
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://silo-web-app.herokuapp.com"
+]
