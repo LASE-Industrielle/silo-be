@@ -103,21 +103,21 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
         if date_from > date_to:
             return JsonResponse({})
-        elif date_from + timezone.timedelta(hours=6) > date_to:
+        elif date_to - date_from <= timezone.timedelta(hours=6):
             truncated_timestamp = Trunc('saved', 'minute', tzinfo=timezone.utc)
             key_format = "%H:%M"
-        elif date_from + timezone.timedelta(days=1) > date_to:
+        elif date_to - date_from <= timezone.timedelta(days=1):
             truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.utc)
             key_format = "%H:00"
-        elif date_from + timezone.timedelta(days=7) > date_to:
+        elif date_to - date_from <= timezone.timedelta(days=7):
             truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.utc)
             key_format = "%d.%m. %H:00"
-        elif date_from + timezone.timedelta(days=7) <= date_to:
+        elif date_to - date_from > timezone.timedelta(days=7):
             key_format = "%d.%m"
             truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
         else:
             # in case some cases are not covered
-            return JsonResponse({"no data": 0})
+            return JsonResponse({})
 
         return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, date_from=date_from,
                                                    date_to=date_to)
