@@ -2,7 +2,7 @@
 import csv
 import datetime
 
-import dateutil
+from dateutil import parser
 from django.db.models import Max
 from django.db.models.functions import Trunc
 from django.http import JsonResponse, HttpResponse
@@ -98,8 +98,8 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False,
             url_path='graph/(?P<sensor_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
     def measures_for_graph_with_time_interval(self, request, sensor_id, date_from, date_to):
-        date_from = dateutil.parser.parse(date_from)
-        date_to = dateutil.parser.parse(date_to)
+        date_from = parser.parse(date_from)
+        date_to = parser.parse(date_to)
 
         if date_from > date_to:
             return JsonResponse({})
