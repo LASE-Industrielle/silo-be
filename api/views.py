@@ -18,7 +18,7 @@ from api.models import Measurement, Notification, Silo
 
 
 class SiloViewSet(viewsets.ModelViewSet):
-    queryset = models.Silo.objects.all()
+    queryset = models.Silo.objects.all().order_by("name")
     serializer_class = serializers.SiloSerializer
 
 
