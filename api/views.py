@@ -173,13 +173,31 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False, url_path='export/(?P<sensor_id>[^/.]+)')
     def export_measures_for_sensor(self, request, sensor_id):
-        measures = Measurement.objects.filter(sensor=sensor_id).all()
+        measures = Measurement.objects.filter(sensor=sensor_id).order_by('saved')
         time_format_filename = "%Y-%m-%d-%H-%M-%S"
         time_format_in_csv = "%Y-%m-%d %H:%M:%S"
         exported_at = datetime.datetime.now().strftime(time_format_filename)
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="measurements_{exported_at}.csv"'
+        writer = csv.writer(response)
+
+        for measure in measures:
+            writer.writerow([measure.saved.strftime(time_format_in_csv), measure.value])
+
+        return response
+
+    @action(methods=['get'], detail=False,
+            url_path='export/(?P<sensor_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
+    def export_measure_for_sensor_with_time_interval(self, request, sensor_id, date_from, date_to):
+        date_from = parser.parse(date_from)
+        date_to = parser.parse(date_to)
+        time_format_in_csv = "%Y-%m-%d %H:%M:%S"
+        measures = Measurement.objects.filter(sensor_id=sensor_id, saved__gte=date_from, saved__lte=date_to).order_by(
+            'saved')
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="measurements.csv"'
         writer = csv.writer(response)
 
         for measure in measures:
