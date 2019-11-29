@@ -71,6 +71,11 @@ class Measurement(models.Model):
     read = models.DateTimeField(null=True)
     saved = models.DateTimeField(auto_now_add=True, null=True)
     sensor = models.ForeignKey(Sensor, on_delete=models.PROTECT, blank=True, null=True)
+    sensor_timestamp = models.CharField(max_length=15, default='')
+    temperature = models.FloatField(default=0)
+    humidity = models.FloatField(default=0)
+    pressure = models.FloatField(default=0)
+    acc = models.CharField(max_length=30, default='')
 
     def __str__(self):
         return str(self.value) + " - " + str(self.saved)

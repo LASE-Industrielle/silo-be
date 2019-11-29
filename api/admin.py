@@ -10,4 +10,4 @@ admin.site.register(Notification)
 
 @admin.register(Measurement)
 class MeasurementModelAdmin(admin.ModelAdmin):
-    list_display = ('value', 'saved', 'sensor')
+    list_display = ('value', 'saved', 'sensor', 'sensor_timestamp', 'temperature', 'humidity', 'pressure', 'acc')
