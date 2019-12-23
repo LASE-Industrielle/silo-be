@@ -3,6 +3,7 @@ import csv
 import datetime
 
 from dateutil import parser
+from django.contrib.auth.models import User
 from django.db.models import Max
 from django.db.models.functions import Trunc
 from django.http import JsonResponse, HttpResponse
@@ -20,6 +21,12 @@ from api.models import Measurement, Notification, Silo
 class SiloViewSet(viewsets.ModelViewSet):
     queryset = models.Silo.objects.all().order_by("name")
     serializer_class = serializers.SiloSerializer
+
+    def filter_queryset(self, queryset):
+        user: User = self.request.user
+        if user.is_superuser:
+            return queryset
+        return queryset.filter(sensor__user__username=user.username)
 
 
 class NotificationViewSet(viewsets.ModelViewSet):

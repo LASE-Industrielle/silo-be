@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.db import models
 from django.db.models import Max
@@ -11,6 +12,7 @@ from rest_framework.authtoken.models import Token
 class Sensor(models.Model):
     serial_number = models.CharField(max_length=200, default='')
     type = models.CharField(max_length=200, default='LASER')
+    user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.type + " (" + self.serial_number + ")"
