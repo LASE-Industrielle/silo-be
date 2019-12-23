@@ -67,8 +67,9 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         fcm_send_topic_message(topic_name='silo1', sound='default', message_body=body, message_title=title,
                                data_message={"body": body, "title": title})
 
-    @action(methods=['get'], detail=False, url_path='all/(?P<sensor_id>[^/.]+)')
-    def all_values_for_sensor(self, request, sensor_id):
+    @action(methods=['get'], detail=False, url_path='all/(?P<silo_id>[^/.]+)')
+    def all_values_for_silo(self, request, silo_id):
+        sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
         measures = Measurement.objects.filter(sensor=sensor_id).order_by('-saved').all()
 
         result = {}
@@ -81,6 +82,7 @@ class MeasurementViewSet(viewsets.ModelViewSet):
             measure_year = measure.saved.strftime('%Y')
 
             if result.get(measure_date) is None:  # don't fetch them again
+
                 measures_per_day_objects = Measurement.objects.filter(sensor=sensor_id,
                                                                       saved__day=measure_day,
                                                                       saved__month=measure_month,
@@ -91,8 +93,8 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(result)
 
-    @action(methods=['get'], detail=False, url_path='graph/(?P<sensor_id>[^/.]+)/(?P<timespan_type>[a-z]+)')
-    def measures_for_graph(self, request, sensor_id, timespan_type):
+    @action(methods=['get'], detail=False, url_path='graph/(?P<silo_id>[^/.]+)/(?P<timespan_type>[a-z]+)')
+    def measures_for_graph(self, request, silo_id, timespan_type):
         # Replacement for SWITCH, dictionary with lambdas that will be executed only when the proper call is made
         # otherwise it will return empty json
         return {
@@ -100,11 +102,11 @@ class MeasurementViewSet(viewsets.ModelViewSet):
             'hour': lambda s_id: self._measures_by_hour(s_id),
             'week': lambda s_id: self._measures_by_week(s_id),
             'month': lambda s_id: self._measures_by_month(s_id)
-        }.get(timespan_type, lambda s_id: JsonResponse({}))(sensor_id)
+        }.get(timespan_type, lambda s_id: JsonResponse({}))(silo_id)
 
     @action(methods=['get'], detail=False,
-            url_path='graph/(?P<sensor_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
-    def measures_for_graph_with_time_interval(self, request, sensor_id, date_from, date_to):
+            url_path='graph/(?P<silo_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
+    def measures_for_graph_with_time_interval(self, request, silo_id, date_from, date_to):
         date_from = parser.parse(date_from)
         date_to = parser.parse(date_to)
 
@@ -126,45 +128,46 @@ class MeasurementViewSet(viewsets.ModelViewSet):
             # in case some cases are not covered
             return JsonResponse({})
 
-        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, date_from=date_from,
+        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, date_from=date_from,
                                                    date_to=date_to)
 
-    def _measures_by_hour(self, sensor_id):
+    def _measures_by_hour(self, silo_id):
         # get maximum dates grouped by expected time format (in this case hours and minutes)
         delta = timezone.timedelta(hours=1)
         truncated_timestamp = Trunc('saved', 'minute', tzinfo=timezone.utc)
         key_format = "%H:%M"
-        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
+        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, delta)
 
-    def _measures_by_day(self, sensor_id):
+    def _measures_by_day(self, silo_id):
         delta = timezone.timedelta(days=1)
         truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.get_current_timezone())
         key_format = "%H:00"
 
-        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
+        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, delta)
 
-    def _measures_by_week(self, sensor_id):
+    def _measures_by_week(self, silo_id):
         delta = timezone.timedelta(weeks=1)
         key_format = "%d.%m"
         truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
 
-        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
+        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, delta)
 
-    def _measures_by_month(self, sensor_id):
+    def _measures_by_month(self, silo_id):
         delta = timezone.timedelta(days=30)
         key_format = "%d.%m"
         truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
 
-        return self._get_measures_as_json_response(key_format, sensor_id, truncated_timestamp, delta)
+        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, delta)
 
     @staticmethod
-    def _get_measures_as_json_response(key_format, sensor_id, truncated_timestamp,
+    def _get_measures_as_json_response(key_format, silo_id, truncated_timestamp,
                                        delta=None, date_from=None, date_to=None):
         if delta:
             date_to = timezone.now()
             date_from = date_to - delta
 
-        base_query = Measurement.objects.filter(sensor_id=sensor_id, saved__gte=date_from, saved__lte=date_to)
+        sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
+        base_query = Measurement.objects.filter(sensor__id=sensor_id, saved__gte=date_from, saved__lte=date_to)
         measure_dates = base_query.annotate(saved_trunc=truncated_timestamp).values('saved_trunc').annotate(
             max_date=Max('saved'))
         max_value_dates = [m['max_date'] for m in measure_dates]
@@ -178,8 +181,9 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(result)
 
-    @action(methods=['get'], detail=False, url_path='export/(?P<sensor_id>[^/.]+)')
-    def export_measures_for_sensor(self, request, sensor_id):
+    @action(methods=['get'], detail=False, url_path='export/(?P<silo_id>[^/.]+)')
+    def export_measures_for_sensor(self, request, silo_id):
+        sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
         measures = Measurement.objects.filter(sensor=sensor_id).order_by('saved')
         time_format_filename = "%Y-%m-%d-%H-%M-%S"
         time_format_in_csv = "%Y-%m-%d %H:%M:%S"
@@ -187,7 +191,7 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="measurements_{exported_at}.csv"'
-        writer = csv.writer(response)
+        writer = csv.writer(response, delimiter=';')
 
         for measure in measures:
             writer.writerow([measure.saved.strftime(time_format_in_csv), measure.value])
@@ -195,8 +199,9 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         return response
 
     @action(methods=['get'], detail=False,
-            url_path='export/(?P<sensor_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
-    def export_measure_for_sensor_with_time_interval(self, request, sensor_id, date_from, date_to):
+            url_path='export/(?P<silo_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
+    def export_measure_for_sensor_with_time_interval(self, request, silo_id, date_from, date_to):
+        sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
         date_from = parser.parse(date_from)
         date_to = parser.parse(date_to)
         time_format_in_csv = "%Y-%m-%d %H:%M:%S"
