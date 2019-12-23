@@ -1,6 +1,5 @@
 # Create your views here.
 import csv
-import datetime
 
 from dateutil import parser
 from django.contrib.auth.models import User
@@ -181,23 +180,6 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(result)
 
-    @action(methods=['get'], detail=False, url_path='export/(?P<silo_id>[^/.]+)')
-    def export_measures_for_sensor(self, request, silo_id):
-        sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
-        measures = Measurement.objects.filter(sensor=sensor_id).order_by('saved')
-        time_format_filename = "%Y-%m-%d-%H-%M-%S"
-        time_format_in_csv = "%Y-%m-%d %H:%M:%S"
-        exported_at = datetime.datetime.now().strftime(time_format_filename)
-
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="measurements_{exported_at}.csv"'
-        writer = csv.writer(response, delimiter=';')
-
-        for measure in measures:
-            writer.writerow([measure.saved.strftime(time_format_in_csv), measure.value])
-
-        return response
-
     @action(methods=['get'], detail=False,
             url_path='export/(?P<silo_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
     def export_measure_for_sensor_with_time_interval(self, request, silo_id, date_from, date_to):
@@ -210,7 +192,7 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="measurements.csv"'
-        writer = csv.writer(response)
+        writer = csv.writer(response, delimiter=';')
 
         for measure in measures:
             writer.writerow([measure.saved.strftime(time_format_in_csv), measure.value])
