@@ -7,6 +7,8 @@ from django.db.models.functions import TruncDay
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
+from django.core.validators import MaxValueValidator, MinValueValidator
+
 
 
 class Sensor(models.Model):
@@ -69,7 +71,7 @@ class Silo(models.Model):
 
 
 class Measurement(models.Model):
-    value = models.FloatField(default=0)
+    value = models.FloatField(default=0, validators=[MinValueValidator(0.0), MaxValueValidator(100.0)])
     read = models.DateTimeField(null=True)
     saved = models.DateTimeField(auto_now_add=True, null=True)
     sensor = models.ForeignKey(Sensor, on_delete=models.PROTECT, blank=True, null=True)
