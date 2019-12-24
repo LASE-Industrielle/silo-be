@@ -63,8 +63,7 @@ class SiloTest(TestCase):
     @freeze_time("2019-03-23 18:45")
     def test_measures_by_hour(self):
         view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
+        sensor, silo_id = self.persist_test_sensor_and_silo()
         values = {
             datetime(2019, 3, 23, 18, 43, 30, tzinfo=timezone.utc): 64,
             datetime(2019, 3, 23, 18, 42, 31, tzinfo=timezone.utc): 62,
@@ -83,18 +82,24 @@ class SiloTest(TestCase):
 
         self.persist_test_measurements(sensor, values)
 
-        response = view._measures_by_hour(sensor_id)
+        response = view._measures_by_hour(silo_id)
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
             {"19:39": 50.0, "19:40": 56.0, "19:41": 58.0, "19:42": 62.0, "19:43": 64.0}
         )
 
+    def persist_test_sensor_and_silo(self):
+        sensor_id = 1
+        silo_id = 11
+        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
+        Silo.objects.create(name="test_silo", sensor=sensor, id=silo_id)
+        return sensor, silo_id
+
     @freeze_time("2019-03-23 18:45")
     def test_measures_by_day(self):
         view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
+        sensor, silo_id = self.persist_test_sensor_and_silo()
 
         values = {
             datetime(2019, 3, 23, 14, 43, 30, tzinfo=timezone.utc): 64,
@@ -110,7 +115,7 @@ class SiloTest(TestCase):
 
         self.persist_test_measurements(sensor, values)
 
-        response = view._measures_by_day(sensor_id)
+        response = view._measures_by_day(silo_id)
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -121,8 +126,7 @@ class SiloTest(TestCase):
     @freeze_time("2019-03-23 18:45")
     def test_measures_by_week(self):
         view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
+        sensor, silo_id = self.persist_test_sensor_and_silo()
 
         values = {
             datetime(2019, 3, 23, 14, 48, 30, tzinfo=timezone.utc): 68,
@@ -149,7 +153,7 @@ class SiloTest(TestCase):
 
         self.persist_test_measurements(sensor, values)
 
-        response = view._measures_by_week(sensor_id)
+        response = view._measures_by_week(silo_id)
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -159,12 +163,11 @@ class SiloTest(TestCase):
     @freeze_time("2019-03-23 18:45")
     def test_measures_by_month(self):
         view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
+        sensor, silo_id = self.persist_test_sensor_and_silo()
 
         self.create_a_lot_of_test_measures(sensor)
 
-        response = view._measures_by_month(sensor_id)
+        response = view._measures_by_month(silo_id)
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -215,11 +218,11 @@ class SiloTest(TestCase):
     @freeze_time("2019-03-23 18:45")
     def base_test_measures_by_custom_date(self, date_from, date_to, expected_data):
         view = MeasurementViewSet()
-        sensor_id = 1
-        sensor = Sensor.objects.create(serial_number='222', id=sensor_id)
+        sensor, silo_id = self.persist_test_sensor_and_silo()
+
         self.create_a_lot_of_test_measures(sensor)
 
-        response = view.measures_for_graph_with_time_interval(None, sensor_id, date_from, date_to)
+        response = view.measures_for_graph_with_time_interval(None, silo_id, date_from, date_to)
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
             expected_data
