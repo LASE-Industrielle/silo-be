@@ -1,6 +1,7 @@
 from datetime import datetime
 from unittest import mock
 
+from django.db.models.functions import Trunc
 from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
@@ -82,7 +83,8 @@ class SiloTest(TestCase):
 
         self.persist_test_measurements(sensor, values)
 
-        response = view._measures_by_hour(silo_id)
+        response = view._get_measures_as_json_response("%H:%M", silo_id, Trunc('saved', 'minute', tzinfo=timezone.utc),
+                                                       timezone.timedelta(hours=1))
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -115,7 +117,8 @@ class SiloTest(TestCase):
 
         self.persist_test_measurements(sensor, values)
 
-        response = view._measures_by_day(silo_id)
+        response = view._get_measures_as_json_response("%H:00", silo_id, Trunc('saved', 'hour', tzinfo=timezone.utc),
+                                                       timezone.timedelta(days=1))
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -153,7 +156,8 @@ class SiloTest(TestCase):
 
         self.persist_test_measurements(sensor, values)
 
-        response = view._measures_by_week(silo_id)
+        response = view._get_measures_as_json_response("%d.%m", silo_id, Trunc('saved', 'day', tzinfo=timezone.utc),
+                                                       timezone.timedelta(weeks=1))
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),
@@ -167,7 +171,8 @@ class SiloTest(TestCase):
 
         self.create_a_lot_of_test_measures(sensor)
 
-        response = view._measures_by_month(silo_id)
+        response = view._get_measures_as_json_response("%d.%m", silo_id, Trunc('saved', 'day', tzinfo=timezone.utc),
+                                                       timezone.timedelta(days=30))
 
         self.assertJSONEqual(
             str(response.content, encoding='utf8'),

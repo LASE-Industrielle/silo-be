@@ -16,6 +16,32 @@ from rest_framework.response import Response
 from api import models, serializers
 from api.models import Measurement, Notification, Silo
 
+HOUR = 'hour'
+DAY = 'day'
+WEEK = 'week'
+MONTH = 'month'
+
+KEY_FORMATS = {
+    HOUR: "%H:%M",
+    DAY: "%H:00",
+    WEEK: "%d.%m",
+    MONTH: "%d.%m"
+}
+
+TRUNCATION = {
+    HOUR: Trunc('saved', 'minute', tzinfo=timezone.utc),
+    DAY: Trunc('saved', HOUR, tzinfo=timezone.utc),
+    WEEK: Trunc('saved', DAY, tzinfo=timezone.utc),
+    MONTH: Trunc('saved', DAY, tzinfo=timezone.utc)
+}
+
+DELTAS = {
+    HOUR: timezone.timedelta(hours=1),
+    DAY: timezone.timedelta(days=1),
+    WEEK: timezone.timedelta(weeks=1),
+    MONTH: timezone.timedelta(days=30)
+}
+
 
 class SiloViewSet(viewsets.ModelViewSet):
     queryset = models.Silo.objects.all().order_by("name")
@@ -94,14 +120,8 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False, url_path='graph/(?P<silo_id>[^/.]+)/(?P<timespan_type>[a-z]+)')
     def measures_for_graph(self, request, silo_id, timespan_type):
-        # Replacement for SWITCH, dictionary with lambdas that will be executed only when the proper call is made
-        # otherwise it will return empty json
-        return {
-            'day': lambda s_id: self._measures_by_day(s_id),
-            'hour': lambda s_id: self._measures_by_hour(s_id),
-            'week': lambda s_id: self._measures_by_week(s_id),
-            'month': lambda s_id: self._measures_by_month(s_id)
-        }.get(timespan_type, lambda s_id: JsonResponse({}))(silo_id)
+        return self._get_measures_as_json_response(KEY_FORMATS[timespan_type], silo_id, TRUNCATION[timespan_type],
+                                                   DELTAS[timespan_type])
 
     @action(methods=['get'], detail=False,
             url_path='graph/(?P<silo_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
@@ -112,51 +132,22 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         if date_from > date_to:
             return JsonResponse({})
         elif date_to - date_from <= timezone.timedelta(hours=6):
-            truncated_timestamp = Trunc('saved', 'minute', tzinfo=timezone.utc)
-            key_format = "%H:%M"
+            truncated_timestamp = TRUNCATION[HOUR]
+            key_format = KEY_FORMATS[HOUR]
         elif date_to - date_from <= timezone.timedelta(days=1):
-            truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.utc)
-            key_format = "%H:00"
+            truncated_timestamp = TRUNCATION[DAY]
+            key_format = KEY_FORMATS[DAY]
         elif date_to - date_from <= timezone.timedelta(days=7):
-            truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.utc)
+            truncated_timestamp = TRUNCATION[DAY]
             key_format = "%d.%m. %H:00"
         elif date_to - date_from > timezone.timedelta(days=7):
-            key_format = "%d.%m"
-            truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
+            key_format = KEY_FORMATS[MONTH]
+            truncated_timestamp = TRUNCATION[MONTH]
         else:
-            # in case some cases are not covered
             return JsonResponse({})
 
         return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, date_from=date_from,
                                                    date_to=date_to)
-
-    def _measures_by_hour(self, silo_id):
-        # get maximum dates grouped by expected time format (in this case hours and minutes)
-        delta = timezone.timedelta(hours=1)
-        truncated_timestamp = Trunc('saved', 'minute', tzinfo=timezone.utc)
-        key_format = "%H:%M"
-        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, delta)
-
-    def _measures_by_day(self, silo_id):
-        delta = timezone.timedelta(days=1)
-        truncated_timestamp = Trunc('saved', 'hour', tzinfo=timezone.get_current_timezone())
-        key_format = "%H:00"
-
-        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, delta)
-
-    def _measures_by_week(self, silo_id):
-        delta = timezone.timedelta(weeks=1)
-        key_format = "%d.%m"
-        truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
-
-        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, delta)
-
-    def _measures_by_month(self, silo_id):
-        delta = timezone.timedelta(days=30)
-        key_format = "%d.%m"
-        truncated_timestamp = Trunc('saved', 'day', tzinfo=timezone.utc)
-
-        return self._get_measures_as_json_response(key_format, silo_id, truncated_timestamp, delta)
 
     @staticmethod
     def _get_measures_as_json_response(key_format, silo_id, truncated_timestamp,
@@ -183,9 +174,22 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False,
             url_path='export/(?P<silo_id>[^/.]+)/(?P<date_from>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/(?P<date_to>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)')
     def export_measure_for_sensor_with_time_interval(self, request, silo_id, date_from, date_to):
-        sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
         date_from = parser.parse(date_from)
         date_to = parser.parse(date_to)
+        return self._get_measures_as_csv(silo_id, date_from=date_from, date_to=date_to)
+
+    @action(methods=['get'], detail=False,
+            url_path='export/(?P<silo_id>[^/.]+)/(?P<timespan_type>[a-z]+)')
+    def export_measure_for_sensor(self, request, silo_id, timespan_type):
+        return self._get_measures_as_csv(silo_id, delta=DELTAS[timespan_type])
+
+    @staticmethod
+    def _get_measures_as_csv(silo_id, delta=None, date_from=None, date_to=None):
+        if delta:
+            date_to = timezone.now()
+            date_from = date_to - delta
+
+        sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
         time_format_in_csv = "%Y-%m-%d %H:%M:%S"
         measures = Measurement.objects.filter(sensor_id=sensor_id, saved__gte=date_from, saved__lte=date_to).order_by(
             'saved')
