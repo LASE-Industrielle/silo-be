@@ -9,6 +9,7 @@ from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.utils.timezone import localtime
 from fcm_django.fcm import fcm_send_topic_message
+from pyfcm.errors import AuthenticationError
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -78,7 +79,10 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         silo = Silo.objects.filter(sensor=serializer.data["sensor"]).first()
         for level in self.critical_levels:
             if serializer.data["value"] < level <= latest_measurement:
-                self.send_notification(silo.name, level)
+                try:
+                    self.send_notification(silo.name, level)
+                except AuthenticationError as e:
+                    print("Sending notification ERROR, " + str(e))
                 break
 
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
