@@ -12,10 +12,14 @@ from fcm_django.fcm import fcm_send_topic_message
 from pyfcm.errors import AuthenticationError
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from api import models, serializers
-from api.models import Measurement, Notification, Silo
+from api.models import Measurement, Notification, Silo, Sensor
+
+SAVED_ASC = 'saved'
+SAVED_DESC = '-saved'
 
 HOUR = 'hour'
 DAY = 'day'
@@ -44,15 +48,26 @@ DELTAS = {
 }
 
 
+def _filter_queryset_by_user_permission(request, queryset):
+    '''
+    Narrow down showing resources to superusers and users that are assigned to the sensor
+    :param request: request to get authenticated user
+    :param queryset: base query set which is fetching all the resources
+    :return:
+    '''
+
+    user: User = request.user
+    if user.is_superuser:
+        return queryset
+    return queryset.filter(sensor__user__username=user.username)
+
+
 class SiloViewSet(viewsets.ModelViewSet):
     queryset = models.Silo.objects.all().order_by("name")
     serializer_class = serializers.SiloSerializer
 
     def filter_queryset(self, queryset):
-        user: User = self.request.user
-        if user.is_superuser:
-            return queryset
-        return queryset.filter(sensor__user__username=user.username)
+        return _filter_queryset_by_user_permission(self.request, queryset)
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
@@ -70,22 +85,63 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.MeasurementSerializer
     critical_levels = [20, 40, 60, 80]
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        latest_measurement = Measurement.objects.filter(sensor=serializer.validated_data["sensor"]).latest("id").value
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        silo = Silo.objects.filter(sensor=serializer.data["sensor"]).first()
+    def filter_queryset(self, queryset):
+        return _filter_queryset_by_user_permission(self.request, queryset)
+
+    def _send_notifications_if_necessary(self, serializer):
+        '''
+        Check if sending notification is necessary,
+        It will be triggered when value drops below the critical levels and the notification hasn't been sent already
+        :param serializer:
+        :return:
+        '''
+        sensor = serializer.validated_data["sensor"]
+        silo = Silo.objects.filter(sensor=sensor).first()
+        latest_measurement = Measurement.objects.filter(sensor=sensor).latest("id").value
         for level in self.critical_levels:
-            if serializer.data["value"] < level <= latest_measurement:
+            if serializer.validated_data["value"] < level <= latest_measurement:
                 try:
                     self.send_notification(silo.name, level)
                 except AuthenticationError as e:
                     print("Sending notification ERROR, " + str(e))
                 break
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def _user_is_allowed_to_create_measurement(self, sensor):
+        '''
+        Allow superusers to create measurement for all sensors, while other users can create measurement only
+        for sensors they are assigned to
+        :param sensor:
+        :return:
+        '''
+        user: User = self.request.user
+        return user.is_superuser or (sensor.user and sensor.user.id == user.id)
+
+    def create(self, request, *args, **kwargs):
+        '''
+        Create measurements in several steps:
+        - validate the request
+        - check if user is allowed to create measuruement (if not, raise permission exception)
+        - create measurement
+        - check if notification needs to be sent
+        :param request:
+        :param args:
+        :param kwargs:
+        :return:
+        '''
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        sensor: Sensor = serializer.validated_data["sensor"]
+
+        if self._user_is_allowed_to_create_measurement(sensor):
+            self.perform_create(serializer)
+            self._send_notifications_if_necessary(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        else:
+            raise PermissionDenied(
+                {"message": "You don't have write permission for this sensor", "sensor_id": sensor.id})
 
     @staticmethod
     def send_notification(silo_name, level):
@@ -99,7 +155,7 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False, url_path='all/(?P<silo_id>[^/.]+)')
     def all_values_for_silo(self, request, silo_id):
         sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
-        measures = Measurement.objects.filter(sensor=sensor_id).order_by('-saved').all()
+        measures = Measurement.objects.filter(sensor=sensor_id).order_by(SAVED_DESC).all()
 
         result = {}
 
@@ -115,7 +171,7 @@ class MeasurementViewSet(viewsets.ModelViewSet):
                 measures_per_day_objects = Measurement.objects.filter(sensor=sensor_id,
                                                                       saved__day=measure_day,
                                                                       saved__month=measure_month,
-                                                                      saved__year=measure_year).order_by('-saved')
+                                                                      saved__year=measure_year).order_by(SAVED_DESC)
 
                 measures_per_day = {m.saved.strftime('%H:%M'): m.value for m in measures_per_day_objects}
                 result[measure_date] = measures_per_day
@@ -163,10 +219,10 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
         base_query = Measurement.objects.filter(sensor__id=sensor_id, saved__gte=date_from, saved__lte=date_to)
         measure_dates = base_query.annotate(saved_trunc=truncated_timestamp).values('saved_trunc').annotate(
-            max_date=Max('saved'))
+            max_date=Max(SAVED_ASC))
         max_value_dates = [m['max_date'] for m in measure_dates]
 
-        measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by('saved')
+        measures = Measurement.objects.filter(sensor_id=sensor_id, saved__in=max_value_dates).order_by(SAVED_ASC)
 
         result = {}
         for m in measures:
@@ -196,7 +252,7 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         sensor_id = models.Silo.objects.filter(id=silo_id).first().sensor.id
         time_format_in_csv = "%Y-%m-%d %H:%M:%S"
         measures = Measurement.objects.filter(sensor_id=sensor_id, saved__gte=date_from, saved__lte=date_to).order_by(
-            'saved')
+            SAVED_ASC)
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="measurements.csv"'
