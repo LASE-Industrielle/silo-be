@@ -74,6 +74,13 @@ class NotificationViewSet(viewsets.ModelViewSet):
     queryset = models.Notification.objects.all().order_by("-timestamp")
     serializer_class = serializers.NotificationSerializer
 
+    def filter_queryset(self, queryset):
+        user: User = self.request.user
+        if user.is_superuser:
+            return queryset
+        silo = Silo.objects.filter(sensor__user__username=user.username).first()
+        return queryset.filter(title=silo.name)
+
 
 class SensorViewSet(viewsets.ModelViewSet):
     queryset = models.Sensor.objects.all()
@@ -88,7 +95,7 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     def filter_queryset(self, queryset):
         return _filter_queryset_by_user_permission(self.request, queryset)
 
-    def _send_notifications_if_necessary(self, serializer):
+    def _send_notifications_if_necessary(self, user, serializer):
         '''
         Check if sending notification is necessary,
         It will be triggered when value drops below the critical levels and the notification hasn't been sent already
@@ -97,23 +104,23 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         '''
         sensor = serializer.validated_data["sensor"]
         silo = Silo.objects.filter(sensor=sensor).first()
-        latest_measurement = Measurement.objects.filter(sensor=sensor).latest("id").value
+        # getting the second latest measurement because the new measurement gets saved before this
+        latest_measurement = Measurement.objects.filter(sensor=sensor).order_by("-id")[1].value
         for level in self.critical_levels:
             if serializer.validated_data["value"] < level <= latest_measurement:
                 try:
-                    self.send_notification(silo.name, level)
+                    self.send_notification(silo.name, level, topic=user.username)
                 except AuthenticationError as e:
                     print("Sending notification ERROR, " + str(e))
                 break
 
-    def _user_is_allowed_to_create_measurement(self, sensor):
+    def _user_is_allowed_to_create_measurement(self, user, sensor):
         '''
         Allow superusers to create measurement for all sensors, while other users can create measurement only
         for sensors they are assigned to
         :param sensor:
         :return:
         '''
-        user: User = self.request.user
         return user.is_superuser or (sensor.user and sensor.user.id == user.id)
 
     def create(self, request, *args, **kwargs):
@@ -133,10 +140,11 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         sensor: Sensor = serializer.validated_data["sensor"]
-
-        if self._user_is_allowed_to_create_measurement(sensor):
+        user: User = self.request.user
+        if self._user_is_allowed_to_create_measurement(user, sensor):
             self.perform_create(serializer)
-            self._send_notifications_if_necessary(serializer)
+
+            self._send_notifications_if_necessary(user, serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         else:
@@ -144,12 +152,13 @@ class MeasurementViewSet(viewsets.ModelViewSet):
                 {"message": "You don't have write permission for this sensor", "sensor_id": sensor.id})
 
     @staticmethod
-    def send_notification(silo_name, level):
+    def send_notification(silo_name, level, topic):
         title = silo_name
         body = f"The level is below {level}%"
         notification = Notification(title=title, body=body)
         notification.save()
-        fcm_send_topic_message(topic_name='silo1', sound='default', message_body=body, message_title=title,
+
+        fcm_send_topic_message(topic_name=topic, sound='default', message_body=body, message_title=title,
                                data_message={"body": body, "title": title})
 
     @action(methods=['get'], detail=False, url_path='all/(?P<silo_id>[^/.]+)')
