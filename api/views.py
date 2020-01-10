@@ -139,7 +139,8 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        print(request)
+        print(str(request))
+        print(str(request.data))
 
         sensor: Sensor = serializer.validated_data["sensor"]
         user: User = self.request.user
