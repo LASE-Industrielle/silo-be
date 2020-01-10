@@ -136,11 +136,12 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         :return:
         '''
 
+        print(str(request))
+        print(str(request.data))
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        print(str(request))
-        print(str(request.data))
 
         sensor: Sensor = serializer.validated_data["sensor"]
         user: User = self.request.user
