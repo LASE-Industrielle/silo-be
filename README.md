@@ -38,3 +38,6 @@ are `pgadmin4@pgadmin.org` and `admin` (see `docker-compose.yml`)
 
 ### Error: That port is already in use.
 - `sudo lsof -t -i tcp:8000 | xargs kill -9`
+
+### See live logs from heroku app
+- `heroku logs --tail`
