@@ -148,14 +148,14 @@ django_heroku.settings(locals())
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
     )
 }
 
-SECURE_SSL_REDIRECT = False
+SECURE_SSL_REDIRECT = True
 
 FCM_DJANGO_SETTINGS = {
    "FCM_SERVER_KEY": os.getenv("SILO_FCM_SERVER_KEY")

@@ -127,7 +127,8 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         '''
         Create measurements in several steps:
         - validate the request
-        - check if user is allowed to create measuruement (if not, raise permission exception)
+        - check if user is allowed to create measurement (if not, raise permission exception)
+        - calculate percentage
         - create measurement
         - check if notification needs to be sent
         :param request:
@@ -136,15 +137,20 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         :return:
         '''
 
-        print(str(request))
-        print(str(request.data))
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-
         sensor: Sensor = serializer.validated_data["sensor"]
+        measurement_value: Measurement = serializer.validated_data["value"]
         user: User = self.request.user
+
+        # recalculate percentage based on value and height of silo
+        if measurement_value:
+            silo = Silo.objects.filter(sensor=sensor).first()
+            if silo:
+                calculated_percentage = ((silo.height - measurement_value) / silo.height) * 100
+                serializer.validated_data["percentage"] = calculated_percentage if calculated_percentage > 0 else -1
+
         if self._user_is_allowed_to_create_measurement(user, sensor):
             self.perform_create(serializer)
 

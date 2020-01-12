@@ -70,7 +70,8 @@ class Silo(models.Model):
 
 
 class Measurement(models.Model):
-    value = models.FloatField(default=0, validators=[MinValueValidator(0.0), MaxValueValidator(100.0)])
+    value = models.FloatField(default=-1)
+    percentage = models.FloatField(default=-1)
     read = models.DateTimeField(null=True)
     saved = models.DateTimeField(auto_now_add=True, null=True)
     sensor = models.ForeignKey(Sensor, on_delete=models.PROTECT, blank=True, null=True)
