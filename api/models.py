@@ -24,6 +24,8 @@ class Silo(models.Model):
     height = models.FloatField(default=0)
     width = models.FloatField(default=0)
     capacity = models.FloatField(default=0)
+    gap_top = models.FloatField(default=0)
+    gap_bottom = models.FloatField(default=0)
     location = models.CharField(max_length=400, null=True, blank=True)
     sensor = models.ForeignKey(Sensor, null=True, on_delete=models.CASCADE)
 
@@ -70,8 +72,8 @@ class Silo(models.Model):
 
 
 class Measurement(models.Model):
-    value = models.FloatField(default=-1)
-    percentage = models.FloatField(default=-1)
+    value = models.FloatField(default=0)
+    distance = models.FloatField(default=0)
     read = models.DateTimeField(null=True)
     saved = models.DateTimeField(auto_now_add=True, null=True)
     sensor = models.ForeignKey(Sensor, on_delete=models.PROTECT, blank=True, null=True)
@@ -79,6 +81,13 @@ class Measurement(models.Model):
     temperature = models.FloatField(default=0)
     humidity = models.FloatField(default=0)
     pressure = models.FloatField(default=0)
+    capacity = models.FloatField(default=0)
+    content = models.FloatField(default=0)
+    radius = models.FloatField(default=0)
+    silo_height = models.FloatField(default=0)
+    silo_width = models.FloatField(default=0)
+    silo_gap_top = models.FloatField(default=0)
+    silo_gap_bottom = models.FloatField(default=0)
     acc = models.CharField(max_length=30, default='')
 
     def __str__(self):

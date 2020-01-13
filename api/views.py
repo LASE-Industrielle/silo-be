@@ -14,6 +14,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from math import pow, pi
 
 from api import models, serializers
 from api.models import Measurement, Notification, Silo, Sensor
@@ -141,15 +142,23 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         sensor: Sensor = serializer.validated_data["sensor"]
-        measurement_value: Measurement = serializer.validated_data["value"]
+        distance = serializer.validated_data["value"]
         user: User = self.request.user
 
-        # recalculate percentage based on value and height of silo
-        if measurement_value:
-            silo = Silo.objects.filter(sensor=sensor).first()
-            if silo:
-                calculated_percentage = ((silo.height - measurement_value) / silo.height) * 100
-                serializer.validated_data["percentage"] = calculated_percentage if calculated_percentage > 0 else -1
+        silo = Silo.objects.filter(sensor=sensor).first()
+
+        if silo:
+            if silo.width is not None and silo.width > 0 and silo.height is not None and silo.height > 0:
+                radius = silo.width / 2
+                capacity = pi * pow(radius, 2) * (silo.height - silo.gap_top - silo.gap_bottom)
+                content = pi * pow(radius, 2) * (silo.height - silo.gap_top - silo.gap_bottom - distance / 1000)
+                percentage = content / capacity * 100
+
+                serializer.validated_data["value"] = round(percentage, 2)
+                serializer.validated_data["distance"] = distance
+                serializer.validated_data["capacity"] = round(capacity, 2)
+                serializer.validated_data["content"] = round(content, 2)
+                serializer.validated_data["radius"] = radius
 
         if self._user_is_allowed_to_create_measurement(user, sensor):
             self.perform_create(serializer)
