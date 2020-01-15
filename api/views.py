@@ -159,6 +159,10 @@ class MeasurementViewSet(viewsets.ModelViewSet):
                 serializer.validated_data["capacity"] = round(capacity, 2)
                 serializer.validated_data["content"] = round(content, 2)
                 serializer.validated_data["radius"] = radius
+                serializer.validated_data["silo_height"] = silo.height
+                serializer.validated_data["silo_width"] = silo.width
+                serializer.validated_data["silo_gap_top"] = silo.gap_top
+                serializer.validated_data["silo_gap_bottom"] = silo.gap_bottom
 
         if self._user_is_allowed_to_create_measurement(user, sensor):
             self.perform_create(serializer)
